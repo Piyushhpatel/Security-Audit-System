@@ -3,7 +3,7 @@ import os
 import datetime
 
 # Path to the directory you want to scan
-scan_directory = "E:\\"
+# scan_directory = "E:\\"
 
 # List of file paths containing SHA256 hashes
 hash_files = [
@@ -28,38 +28,45 @@ def calculate_hash(file_path, hash_algorithm="sha256", block_size=65536):
             hash_obj.update(block)
     return hash_obj.hexdigest()
 
-def scan_and_log_malware(directory, malware_hashes, log_file):
-    """Scan files in the directory and log scan results."""
-    total_files = 0
-    healthy_files = 0
-    suspicious_files = 0
+def scan_and_log_malware(directory, malware_hashes, db_instance):
+    """Scan files in the directory and log scan results to Firebase."""
 
-    with open(log_file, "a") as log:
-        log.write(f"Scan started at {datetime.datetime.now()}\n")
-        for root, dirs, files in os.walk(directory):
-            for file_name in files:
-                total_files += 1
-                file_path = os.path.join(root, file_name)
-                file_hash_sha256 = calculate_hash(file_path, "sha256")
+    scan_status = {
+        'total_files': 0,
+        'suspicious_files': 0,
+        'healthy_files': 0
+    }
 
-                if file_hash_sha256 in malware_hashes:
-                    log.write(f"Suspicious file found: {file_path}\n")
-                    suspicious_files += 1
-                else:
-                    healthy_files += 1
 
-                print(f"Scanning: {file_path}", end="\r")
+    cnt = 0
 
-    with open(log_file, "a") as log:
-        log.write(f"Scan completed at {datetime.datetime.now()}\n")
-        log.write(f"Total files scanned: {total_files}\n")
-        log.write(f"Healthy files: {healthy_files}\n")
-        log.write(f"Suspicious files: {suspicious_files}\n")
-        log.write("Scan results:\n")
+    for root, dirs, files in os.walk(directory):
+        for file_name in files:
+            cnt += 1
+            scan_status['total_files'] = cnt
+            file_path = os.path.join(root, file_name)
+            
+            file_hash_sha256 = calculate_hash(file_path, "sha256")
 
-    print("\nScanning complete. Check the log.txt for details.")
+            if file_hash_sha256 in malware_hashes:
+                scan_status['suspicious_files'] += 1
+            else:
+                scan_status['healthy_files'] += 1
+
+            # Update scanned files in the database
+            db_instance.child('log_file_status').child(str(cnt)).set(file_path)
+
+    # Update scan status in the database
+    db_instance.child('scan_status').set(scan_status)
+
+    print("\nScanning complete. Check the Firebase database for details.")
+
+def update_scan_status(db_instance):
+    scan_directory = "F:\\"
+    malware_hashes = load_hashes_from_files(hash_files)
+    scan_and_log_malware(scan_directory, malware_hashes, db_instance)
 
 if __name__ == "__main__":
-    log_file = "log.txt"
+    scan_directory = "F:\\"
     malware_hashes = load_hashes_from_files(hash_files)
-    scan_and_log_malware(scan_directory, malware_hashes, log_file)
+    scan_and_log_malware(scan_directory, malware_hashes)

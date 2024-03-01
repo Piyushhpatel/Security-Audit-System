@@ -2,7 +2,6 @@
 import platform
 import os
 import socket
-from connection import initialize_firebase
 
 def get_system_information():
     system_info = {}
@@ -33,13 +32,8 @@ def get_system_information():
     return system_info
 
 def update_system_info_to_firebase():
-    db_instance = initialize_firebase()
     system_info = get_system_information()
-
-    # Update system information to Firebase Realtime Database
-    db_instance.child('system_info').set(system_info)
-
-    # print("System information updated to Firebase Realtime Database.")
+    print(system_info)
 
 if __name__ == "__main__":
     update_system_info_to_firebase()

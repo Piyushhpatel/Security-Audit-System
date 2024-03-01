@@ -22,12 +22,6 @@ def is_usb_plugged_in():
     usb_status['status'] = 'false'
     return usb_status
 
-def update_usb_status():
-    db_instance = initialize_firebase()
-    usb_status = is_usb_plugged_in()
-
-    db_instance.child('usb_status').set(usb_status)
-
 
 if __name__ == "__main__":
     try:

@@ -39,7 +39,7 @@ def update_system_info_to_firebase():
     # Update system information to Firebase Realtime Database
     db_instance.child('system_info').set(system_info)
 
-    print("System information updated to Firebase Realtime Database.")
+    # print("System information updated to Firebase Realtime Database.")
 
 if __name__ == "__main__":
     update_system_info_to_firebase()

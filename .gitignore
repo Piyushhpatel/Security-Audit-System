@@ -1,0 +1,8 @@
+# Ignore key.json file
+key.json
+
+# Ignore .venv directory
+.venv/
+
+# Ignore __pycache__ directory
+__pycache__/

@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "314794761919",
+    "firebase_url": "https://security-audit-a5a5d-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "security-audit-a5a5d",
+    "storage_bucket": "security-audit-a5a5d.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:314794761919:android:e8be604344b6842ecb700a",
+        "android_client_info": {
+          "package_name": "com.example.dashboard"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCOES8hxWywakx8w5aJI12LOjTPfnkCho0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

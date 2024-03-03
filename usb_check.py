@@ -26,7 +26,7 @@ def is_usb_plugged_in():
 if __name__ == "__main__":
     try:
         while True:
-            update_usb_status()
+            # update_usb_status()
             print('Updating....')
             time.sleep(1)  # Adjust the sleep time as needed
 

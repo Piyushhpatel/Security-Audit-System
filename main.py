@@ -27,7 +27,11 @@ def main():
 
     # Step 4: Call Scan
     # Add your scan code here
-    update_scan_status(db_instance)
+    usb_status = is_usb_plugged_in()
+    if usb_status['status'] == 'true':
+        update_scan_status(db_instance)
+    else:
+        print("Please Plug In Usb")
 
     # Main thread waits for the update_usb_status thread to finish
     t1.join()

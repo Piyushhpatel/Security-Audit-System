@@ -1,4 +1,5 @@
-# Ignore key.json file
+# Ignore files
+connection.py
 key.json
 
 # Ignore .venv directory

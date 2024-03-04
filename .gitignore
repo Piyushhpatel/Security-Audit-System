@@ -4,6 +4,8 @@ key.json
 
 # Ignore .venv directory
 .venv/
+build/
+dist/
 
 # Ignore __pycache__ directory
 __pycache__/

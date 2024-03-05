@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'package:firebase_database/firebase_database.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:wave_loading_indicator/wave_progress.dart';
 
 class Indicator extends StatefulWidget {
@@ -11,24 +13,25 @@ class Indicator extends StatefulWidget {
 }
 
 class _IndicatorState extends State<Indicator> {
-  bool scanning = true;
-  double _progress = 0.0;
+  bool scanning = false;
   int touchedIndex = -1;
+  late Map<dynamic, dynamic> scanStatus = {};
+  FirebaseDatabase database = FirebaseDatabase.instance;
+
+  Future<void> getScanStatus() async {
+    DatabaseReference ref = database.ref('scan_status');
+    ref.onValue.listen((event) {
+      final data = event.snapshot.value;
+      setState(() {
+        scanStatus = data as Map<dynamic, dynamic>;
+      });
+    });
+  }
 
   @override
   void initState() {
     super.initState();
-
-    Timer.periodic(Duration(seconds: 10), (timer) {
-      setState(() {
-        if (_progress < 100.0) {
-          _progress += 10; // Increment progress by 10% every second
-        } else {
-          scanning = false; // Set to false to show the percent indicator
-          timer.cancel(); // Stop the timer when progress reaches 100%
-        }
-      });
-    });
+    getScanStatus();
   }
 
   @override
@@ -67,76 +70,131 @@ class _IndicatorState extends State<Indicator> {
                   borderColor: Colors.blue,
                   foregroundWaveColor: Colors.blue,
                   backgroundWaveColor: Colors.blue[100],
-                  progress: _progress, // [0-100]
+                  progress: 100, // [0-100]
                   innerPadding: 5, // padding between border and waves
                 ),
-                SizedBox(height: 8.0),
-                Text(
+                const SizedBox(height: 8.0),
+                const Text(
                   "Scanning...",
-                  style: TextStyle(fontSize: 24),
+                  style: TextStyle(fontSize: 24, color: Colors.blue),
                 ),
               ],
             )
-          : Expanded(
-              child: PieChart(
-                PieChartData(
-                  pieTouchData: PieTouchData(
-                    touchCallback: (FlTouchEvent event, pieTouchResponse) {
-                      setState(() {
-                        if (!event.isInterestedForInteractions ||
-                            pieTouchResponse == null ||
-                            pieTouchResponse.touchedSection == null) {
-                          touchedIndex = -1;
-                          return;
-                        }
-                        touchedIndex = pieTouchResponse
-                            .touchedSection!.touchedSectionIndex;
-                      });
-                    },
+          : Column(
+              children: [
+                Expanded(
+                  child: PieChart(
+                    PieChartData(
+                      pieTouchData: PieTouchData(
+                        touchCallback: (FlTouchEvent event, pieTouchResponse) {
+                          setState(() {
+                            if (!event.isInterestedForInteractions ||
+                                pieTouchResponse == null ||
+                                pieTouchResponse.touchedSection == null) {
+                              touchedIndex = -1;
+                              return;
+                            }
+                            touchedIndex = pieTouchResponse
+                                .touchedSection!.touchedSectionIndex;
+                          });
+                        },
+                      ),
+                      borderData: FlBorderData(
+                        show: false,
+                      ),
+                      sectionsSpace: 0,
+                      centerSpaceRadius: 40,
+                      sections: showingSections(scanStatus),
+                    ),
                   ),
-                  borderData: FlBorderData(
-                    show: false,
-                  ),
-                  sectionsSpace: 0,
-                  centerSpaceRadius: 40,
-                  sections: showingSections(),
                 ),
-              ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          height: 15,
+                          width: 15,
+                          color: Colors.indigo,
+                        ),
+                        const SizedBox(
+                          width: 5,
+                        ),
+                        const Text(
+                          "Healthy Files",
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        )
+                      ],
+                    ),
+                    Row(
+                      children: [
+                        Container(
+                          height: 15,
+                          width: 15,
+                          color: Colors.blueAccent[100],
+                        ),
+                        const SizedBox(
+                          width: 5,
+                        ),
+                        const Text(
+                          "Malicious Files",
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        )
+                      ],
+                    )
+                  ],
+                ),
+              ],
             ),
     );
   }
 }
 
-List<PieChartSectionData> showingSections() {
+List<PieChartSectionData> showingSections(scanStatus) {
   return List.generate(2, (i) {
     final isTouched = i == -1;
     final fontSize = isTouched ? 25.0 : 16.0;
-    final radius = isTouched ? 90.0 : 90.0;
+    final radius = isTouched ? 61.0 : 61.0;
     const shadows = [Shadow(color: Colors.black, blurRadius: 2)];
+
+    double healthy = scanStatus['healthy_files'] != null
+        ? scanStatus['healthy_files'] as double
+        : 0.0;
+    double total = scanStatus['total_files'] != null
+        ? scanStatus['total_files'] as double
+        : 0.0;
+    double mal = scanStatus['suspicious_files'] != null
+        ? scanStatus['suspicious_files'] as double
+        : 0.0;
+
+    double hval = healthy / total * 100;
+    double mval = mal / total * 100;
+
     switch (i) {
       case 0:
         return PieChartSectionData(
-          color: Colors.red,
-          value: 40,
-          title: '40%',
+          color: Colors.blue[100],
+          value: mal,
+          title: '$mval%',
           radius: radius,
           titleStyle: TextStyle(
             fontSize: fontSize,
             fontWeight: FontWeight.bold,
-            color: Colors.white,
+            color: Colors.indigo,
             shadows: shadows,
           ),
         );
       case 1:
         return PieChartSectionData(
-          color: Colors.green,
-          value: 60,
-          title: '30%',
+          color: Colors.indigoAccent,
+          value: hval,
+          title: '$hval%',
           radius: radius,
           titleStyle: TextStyle(
             fontSize: fontSize,
             fontWeight: FontWeight.bold,
-            color: Colors.white,
+            color: Colors.blue[50],
             shadows: shadows,
           ),
         );

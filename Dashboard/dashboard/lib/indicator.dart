@@ -1,8 +1,8 @@
 import 'dart:async';
+import 'dart:ffi';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:wave_loading_indicator/wave_progress.dart';
 
 class Indicator extends StatefulWidget {
@@ -13,10 +13,14 @@ class Indicator extends StatefulWidget {
 }
 
 class _IndicatorState extends State<Indicator> {
-  bool scanning = false;
+  bool scanning = true;
   int touchedIndex = -1;
   late Map<dynamic, dynamic> scanStatus = {};
+  late Map<dynamic, dynamic> totalFile = {};
   FirebaseDatabase database = FirebaseDatabase.instance;
+  List<String> log = [];
+  double _progress = 0.0;
+  int fileCount = 0;
 
   Future<void> getScanStatus() async {
     DatabaseReference ref = database.ref('scan_status');
@@ -28,10 +32,43 @@ class _IndicatorState extends State<Indicator> {
     });
   }
 
+  Future<void> getTotalFiles() async {
+    DatabaseReference ref = database.ref('totalFile');
+    ref.onValue.listen((event) {
+      final data = event.snapshot.value;
+      setState(() {
+        totalFile = data as Map<dynamic, dynamic>;
+      });
+    });
+  }
+
   @override
   void initState() {
     super.initState();
+    getTotalFiles();
     getScanStatus();
+
+    DatabaseReference logRef = FirebaseDatabase.instance.ref('log_file_status');
+    logRef.onChildAdded.listen((event) {
+      final fileName = event.snapshot.value.toString();
+      setState(() {
+        log.add(fileName);
+        fileCount = totalFile['totalfiles'] ?? 0;
+        int logLength = log.length;
+        // Check if fileCount is greater than zero before calculating progress
+        if (fileCount > 0) {
+          _progress = (log.length / fileCount) * 100;
+        } else {
+          // Handle the case where fileCount is zero (to avoid division by zero)
+          _progress = 0.0;
+        }
+        print(
+            'Progrss : $_progress, Filecout : $fileCount, Log Length : $logLength');
+        if (_progress >= 100) {
+          scanning = false;
+        }
+      });
+    });
   }
 
   @override
@@ -42,24 +79,25 @@ class _IndicatorState extends State<Indicator> {
       margin: const EdgeInsets.all(30),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: const [
-            BoxShadow(
-              color: Colors.grey,
-              offset: Offset(
-                2.0,
-                2.0,
-              ),
-              blurRadius: 10.0,
-              spreadRadius: 1.0,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: const [
+          BoxShadow(
+            color: Colors.grey,
+            offset: Offset(
+              2.0,
+              2.0,
             ),
-            BoxShadow(
-              color: Colors.white,
-              offset: Offset(0.0, 0.0),
-              blurRadius: 0.0,
-              spreadRadius: 0.0,
-            ), //BoxS
-          ]),
+            blurRadius: 10.0,
+            spreadRadius: 1.0,
+          ),
+          BoxShadow(
+            color: Colors.white,
+            offset: Offset(0.0, 0.0),
+            blurRadius: 0.0,
+            spreadRadius: 0.0,
+          ),
+        ],
+      ),
       child: scanning
           ? Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -70,8 +108,8 @@ class _IndicatorState extends State<Indicator> {
                   borderColor: Colors.blue,
                   foregroundWaveColor: Colors.blue,
                   backgroundWaveColor: Colors.blue[100],
-                  progress: 100, // [0-100]
-                  innerPadding: 5, // padding between border and waves
+                  progress: _progress, // [0-100]
+                  innerPadding: 5,
                 ),
                 const SizedBox(height: 8.0),
                 const Text(
@@ -103,7 +141,7 @@ class _IndicatorState extends State<Indicator> {
                         show: false,
                       ),
                       sectionsSpace: 0,
-                      centerSpaceRadius: 40,
+                      centerSpaceRadius: 30,
                       sections: showingSections(scanStatus),
                     ),
                   ),
@@ -155,28 +193,22 @@ List<PieChartSectionData> showingSections(scanStatus) {
   return List.generate(2, (i) {
     final isTouched = i == -1;
     final fontSize = isTouched ? 25.0 : 16.0;
-    final radius = isTouched ? 61.0 : 61.0;
+    final radius = isTouched ? 65.0 : 65.0;
     const shadows = [Shadow(color: Colors.black, blurRadius: 2)];
 
-    double healthy = scanStatus['healthy_files'] != null
-        ? scanStatus['healthy_files'] as double
-        : 0.0;
-    double total = scanStatus['total_files'] != null
-        ? scanStatus['total_files'] as double
-        : 0.0;
-    double mal = scanStatus['suspicious_files'] != null
-        ? scanStatus['suspicious_files'] as double
-        : 0.0;
+    int healthy = scanStatus['healthy_files'] ?? 0;
+    int total = scanStatus['total_files'] ?? 0;
+    int mal = scanStatus['suspicious_files'] ?? 0;
 
-    double hval = healthy / total * 100;
-    double mval = mal / total * 100;
+    double hval = total != 0 ? (healthy / total * 100) : 0;
+    double mval = total != 0 ? (mal / total * 100) : 0;
 
     switch (i) {
       case 0:
         return PieChartSectionData(
           color: Colors.blue[100],
-          value: mal,
-          title: '$mval%',
+          value: mval,
+          title: mval.toStringAsFixed(1) + '%',
           radius: radius,
           titleStyle: TextStyle(
             fontSize: fontSize,
@@ -189,7 +221,7 @@ List<PieChartSectionData> showingSections(scanStatus) {
         return PieChartSectionData(
           color: Colors.indigoAccent,
           value: hval,
-          title: '$hval%',
+          title: hval.toStringAsFixed(1) + '%',
           radius: radius,
           titleStyle: TextStyle(
             fontSize: fontSize,

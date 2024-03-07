@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:quickalert/quickalert.dart';
 import 'package:wave_loading_indicator/wave_progress.dart';
 
 class Indicator extends StatefulWidget {
@@ -53,7 +54,6 @@ class _IndicatorState extends State<Indicator> {
       setState(() {
         log.add(fileName);
         fileCount = totalFile['totalfiles'] ?? 0;
-        int logLength = log.length;
         // Check if fileCount is greater than zero before calculating progress
         if (fileCount > 0) {
           _progress = (log.length / fileCount) * 100;
@@ -61,10 +61,16 @@ class _IndicatorState extends State<Indicator> {
           // Handle the case where fileCount is zero (to avoid division by zero)
           _progress = 0.0;
         }
-        print(
-            'Progrss : $_progress, Filecout : $fileCount, Log Length : $logLength');
+        // print(
+        //     'Progrss : $_progress, Filecout : $fileCount, Log Length : $logLength');
         if (_progress >= 100) {
           scanning = false;
+          QuickAlert.show(
+            context: context,
+            type: QuickAlertType.success,
+            title: "Scan Complete",
+            text: "Your Scan is Completed",
+          );
         }
       });
     });

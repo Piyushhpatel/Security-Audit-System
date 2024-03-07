@@ -41,10 +41,9 @@ class _HomePageState extends State<HomePage> {
           actions: <Widget>[
             TextButton(
               onPressed: () {
-                // if (usb['status'] == 'true') {
-                //   Navigator.of(context).pop();
-                // }
-                Navigator.of(context).pop();
+                if (usb['status'] == 'true') {
+                  Navigator.of(context).pop();
+                }
               },
               style: const ButtonStyle(
                   backgroundColor: MaterialStatePropertyAll(Colors.blueAccent),
@@ -66,10 +65,11 @@ class _HomePageState extends State<HomePage> {
 
     DatabaseReference ref = FirebaseDatabase.instance.ref('usb_status');
     ref.onValue.listen((event) {
-      final data = event.snapshot.value;
+      final data = event.snapshot.value ?? {};
       setState(() {
         usb = data as Map<dynamic, dynamic>;
-        if (usb['status'] == 'false') {
+
+        if (usb['status'] == 'false' || usb.isEmpty == true) {
           _showMyDialog();
         }
       });
